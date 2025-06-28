@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hike Expense Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/sql-wasm.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    /* --- CSS Variables for Alpine Serenity Theme --- */
+    :root {
+      /* Base Colors (Neutrals) */
+      --color-text-dark: #212529; /* Darker text for headings */
+      --color-text-light: #495057; /* Lighter text for body/details */
+      --color-background-light: #f8f9fa; /* Lightest background */
+      --color-background-medium: #e9ecef; /* Slightly darker for table headers, etc. */
+      --color-card-background: #ffffff; /* Card/section background */
+      --color-border: #dee2e6; /* General border color */
+      --color-placeholder: #6c757d; /* Placeholder text */
+      --color-white: #ffffff;
+
+      /* Alpine Serenity Palette */
+      --color-primary: #3498db; /* A medium blue for primary actions, headings, active nav */
+      --color-primary-light: #e6f2fa; /* Light blue for hover states */
+      --color-primary-dark: #21618c; /* Darker blue for active/hover text */
+      
+      /* Semantic Colors (Status) */
+      --color-success: #2ecc71; /* Green for success messages/buttons */
+      --color-danger: #e74c3c; /* Red for danger actions like delete */
+      --color-danger-dark: #c0392b; /* Darker red for hover on delete */
+      --color-info: #17a2b8; /* For info buttons/messages */
+      --color-warning: #f39c12; /* For warning messages */
+
+      /* Font Family */
+      --font-family-base: 'Inter', sans-serif;
+      --font-family-heading: 'Inter', sans-serif; /* Can be changed for variety */
+
+      /* Border Radius */
+      --border-radius-sm: 0.25rem;
+      --border-radius-md: 0.5rem;
+      --border-radius-lg: 0.75rem;
+
+      /* Shadow */
+      --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      --shadow-md: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    /* --- General Body and Typography --- */
+    body {
+      background-color: var(--color-background-light);
+      font-family: var(--font-family-base);
+      color: var(--color-text-light);
+    }
+
+    h1, h2, h3, h4 {
+      color: var(--color-text-dark);
+      font-family: var(--font-family-heading);
+      margin-bottom: 1rem;
+    }
+
+    h1 { 
+      font-size: 2.5rem; 
+      font-weight: bold; 
+      color: var(--color-primary); /* Apply primary color to main heading */
+    }
+    h2 { 
+      font-size: 1.75rem; 
+      border-bottom: 2px solid var(--color-primary); /* Apply primary color to section heading underline */
+      padding-bottom: 0.5rem; 
+      margin-bottom: 2rem; 
+    }
+    h4 { 
+      font-size: 1.25rem; 
+      color: var(--color-primary); /* Apply primary color to sub-headings */
+      margin-top: 1.5rem; 
+    }
+
+    /* --- Page Layout and Sections --- */
+    .page { display: none; }
+    .active { display: block; }
+
+    .entry-result-layout {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .entry-section, .result-section {
+      flex: 1 1 45%;
+      background: var(--color-card-background);
+      padding: 1.5rem;
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-md);
+      min-width: 300px;
+    }
+
+    .form-section {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .form-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    /* --- Navigation Pills --- */
+    .nav-pills .nav-link {
+      color: var(--color-primary);
+      padding: 0.75rem 1.25rem;
+      transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+      border-radius: var(--border-radius-md);
+    }
+    .nav-pills .nav-link.active {
+      background-color: var(--color-primary);
+      color: var(--color-white) !important;
+      font-weight: bold;
+      box-shadow: var(--shadow-sm);
+    }
+   .nav-link {
+    cursor:pointer
+  }
+    
+    /* --- Tables --- */
+    .table th, .table td {
+      vertical-align: middle;
+      font-size: 0.95rem;
+    }
+    .table thead th {
+      background-color: var(--color-background-medium);
+      color: var(--color-text-dark);
+      font-weight: 600;
+    }
+    .table-sm th, .table-sm td {
+      padding: 0.5rem;
+    }
+
+    /* --- Form Elements --- */
+    .form-check-inline {
+      display: inline-block;
+      margin-right: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .form-check-input {
+      margin-top: 0.3em;
+    }
+
+    /* --- Buttons --- */
+    .btn-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 1.1rem;
+      border-radius: var(--border-radius-md);
+    }
+    .btn-icon i {
+      font-size: 1.2rem;
+    }
+
+    /* Bootstrap button overrides to use theme colors */
+    .btn-success {
+      background-color: var(--color-success);
+      border-color: var(--color-success);
+    }
+    
+    .btn-primary {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+    
+    .btn-info {
+      background-color: var(--color-info);
+      border-color: var(--color-info);
+    }
+  
+
+    /* --- Specific styles for balance --- */
+    .balance-positive {
+      color: var(--color-success);
+      font-weight: bold;
+    }
+    .balance-negative {
+      color: var(--color-danger);
+      font-weight: bold;
+    }
+    .balance-zero {
+      color: var(--color-placeholder);
+    }
+
+    /* --- Animations and Hover Effects --- */
+    .fade-in {
+      animation: fadeIn 0.6s ease-in-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-hover:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-5px);
+      transition: all 0.3s ease-in-out;
+    }
+
+    .delete-btn {
+      cursor: pointer;
+      color: var(--color-danger);
+      margin-left: 0.5rem;
+      font-size: 1.1em;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+    .delete-btn:hover {
+      color: var(--color-danger-dark);
+      transform: scale(1.1);
+    }
+
+    /* --- Placeholders for empty lists --- */
+    .list-placeholder {
+      text-align: center;
+      color: var(--color-placeholder);
+      font-style: italic;
+      padding: 1rem;
+    }
+
+    /* --- SweetAlert2 Specific Overrides --- */
+    .swal2-container {
+      transform: none !important; /* Prevents unwanted transforms from other animations */
+    }
+
+    /* --- Mobile adjustments --- */
+    @media (max-width: 768px) {
+      .entry-result-layout {
+        flex-direction: column;
+      }
+      .entry-section, .result-section {
+        flex: none;
+        width: 100%;
+      }
+      .btn-icon {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body class="container py-4">
+
+  <h1 class="mb-4 text-center">🏞️ Hiker Helps</h1>
+  <nav class="nav nav-pills justify-content-center mb-4 bg-light p-3 rounded-pill shadow-sm">
+    <a class="nav-link active" onclick="showPage('main', event)">📋 Dashboard</a>
+    <a class="nav-link" onclick="showPage('settlements', event)">💸 Settlements</a>
+  </nav>
+
+  <div id="main" class="page active fade-in">
+    <div class="entry-result-layout">
+      <div class="entry-section card-hover">
+        <h2 class="mb-3">➕ Add Entries</h2>
+        <div class="form-section">
+          <h4>🏔️ Add Hike</h4>
+          <form onsubmit="addHike(event)">
+            <div class="mb-3">
+              <label for="hike_name" class="form-label">Hike Name</label>
+              <input class="form-control" id="hike_name" placeholder="e.g., Everest Base Camp" required />
+            </div>
+            <div class="mb-3">
+              <label for="hike_location" class="form-label">Location</label>
+              <input class="form-control" id="hike_location" placeholder="e.g., Nepal" required />
+            </div>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input class="form-control" id="start_date" type="date" required />
+              </div>
+              <div class="col-md-6">
+                <label for="end_date" class="form-label">End Date</label>
+                <input class="form-control" id="end_date" type="date" required />
+              </div>
+            </div>
+            <button class="btn btn-success btn-icon w-100" type="submit"><i class="fas fa-plus-circle"></i> Add Hike</button>
+          </form>
+        </div>
+
+        <div class="form-section">
+          <h4>🚶 Add Hiker (to Global List)</h4>
+          <form onsubmit="addHiker(event)">
+            <div class="mb-3">
+              <label for="hiker_name" class="form-label">Hiker Name</label>
+              <input class="form-control" id="hiker_name" placeholder="e.g., John Doe" required />
+            </div>
+            <button class="btn btn-success btn-icon w-100" type="submit"><i class="fas fa-user-plus"></i> Add Hiker</button>
+          </form>
+        </div>
+
+        <div class="form-section">
+          <h4>🧑‍🤝‍🧑 Manage Hike Participants</h4>
+          <form onsubmit="assignHikersToHike(event)">
+            <div class="mb-3">
+              <label for="assign_hike_id" class="form-label">Select Hike to Manage</label>
+              <select class="form-select" id="assign_hike_id" required onchange="loadHikeParticipants()"></select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Assign Hikers from Global List:</label>
+                <div id="assign_hiker_checkboxes" class="form-check border p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                    <p class="text-muted list-placeholder">Select a hike to see hikers.</p>
+                </div>
+            </div>
+            <button class="btn btn-info btn-icon w-100" type="submit"><i class="fas fa-users-cog"></i> Save Participants for Hike</button>
+          </form>
+        </div>
+
+        <div class="form-section">
+          <h4>💳 Add Payment</h4>
+          <form onsubmit="addPayment(event)">
+            <div class="mb-3">
+              <label for="payment_hike" class="form-label">Select Hike</label>
+              <select class="form-select" id="payment_hike" required onchange="updatePaymentFormForHike()"></select>
+            </div>
+            <div class="mb-3">
+              <label for="payment_desc" class="form-label">Description</label>
+              <input class="form-control" id="payment_desc" placeholder="e.g., Food and Accommodation" required />
+            </div>
+            <div class="mb-3">
+              <label for="payment_amount" class="form-label">Amount (Rs.)</label>
+              <input class="form-control" id="payment_amount" type="number" step="0.01" min="0.01" placeholder="e.g., 1500.50" required />
+            </div>
+            <div class="mb-3">
+              <label for="paid_by" class="form-label">Paid By</label>
+              <select class="form-select" id="paid_by" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">🙋 Involved Hikers:</label>
+              <div id="hiker_checkboxes" class="form-check border p-3 rounded"></div>
+            </div>
+            <button class="btn btn-primary btn-icon w-100" type="submit"><i class="fas fa-money-bill-wave"></i> Save Payment</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="result-section card-hover">
+        <h2 class="mb-3">📊 Summary</h2>
+        <div class="mb-3">
+          <label for="payment_filter_hike" class="form-label fw-bold">View Summary For:</label>
+          <select class="form-select" id="payment_filter_hike" onchange="refreshFilteredViews()"></select>
+        </div>
+        <hr/>
+        <div class="form-section">
+          <h4>🧭 Hikes</h4>
+          <table class="table table-bordered table-striped table-sm table-hover">
+            <tbody id="hike_list"></tbody>
+          </table>
+
+          <h4>🧑‍🤝‍🧑 All Hikers (Global List)</h4>
+          <table class="table table-bordered table-striped table-sm table-hover">
+            <tbody id="hiker_list"></tbody>
+          </table>
+
+          <h4>💰 Payments</h4>
+          <table class="table table-bordered table-striped table-sm table-hover">
+            <thead class="table-light"><tr><th>Description</th><th>Amount (Rs.)</th><th class="text-end">Action</th></tr></thead>
+            <tbody id="payment_list"></tbody>
+          </table>
+        </div>
+
+        <div class="form-section">
+          <h4>📋 Balance Summary</h4>
+          <table class="table table-bordered table-striped table-hover">
+            <thead class="table-light"><tr><th>Hiker</th><th>Paid (Rs.)</th><th>Owed (Rs.)</th><th>Balance (Rs.)</th></tr></thead>
+            <tbody id="summary"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="settlements" class="page fade-in">
+    <div class="result-section card-hover" style="margin: auto; max-width: 800px;">
+      <h2 class="mb-3">💸 Who Pays Whom</h2>
+       <div class="mb-3">
+          <label for="settlement_filter_hike" class="form-label fw-bold">View Settlements For:</label>
+          <select class="form-select" id="settlement_filter_hike" onchange="this.value === 'all' ? calculateSettlements(null) : calculateSettlements(this.value)"></select>
+        </div>
+      <table class="table table-bordered table-striped table-hover">
+        <thead class="table-light">
+          <tr><th>From</th><th>To</th><th>Amount (Rs.)</th></tr>
+        </thead>
+        <tbody id="settlement_output"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let db;
+
+// Initialize SQL.js and create database schema
+initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.6.2/${file}` }).then(SQL => {
+  db = new SQL.Database();
+  db.run(`
+    CREATE TABLE IF NOT EXISTS hikes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, location TEXT, start_date TEXT, end_date TEXT);
+    CREATE TABLE IF NOT EXISTS hikers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);
+    CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, description TEXT, amount REAL, paid_by INTEGER, hike_id INTEGER);
+    CREATE TABLE IF NOT EXISTS payment_participants (payment_id INTEGER, hiker_id INTEGER);
+    CREATE TABLE IF NOT EXISTS hike_participants (hike_id INTEGER, hiker_id INTEGER, PRIMARY KEY (hike_id, hiker_id));
+  `);
+  refreshUI();
+  // SweetAlert2 toast positioned at top-start
+  showToast('Database ready! Start your planning.', 'success');
+}).catch(err => {
+  console.error("SQL.js initialization error:", err);
+  showToast('Failed to load database. Please try again.', 'danger');
+});
+
+// --- UI Utility Functions ---
+function showPage(id, e) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'fade-in'));
+  document.getElementById(id).classList.add('active', 'fade-in');
+  document.querySelectorAll('nav .nav-link').forEach(link => link.classList.remove('active'));
+  if (e) e.target.classList.add('active');
+  if (id === 'settlements') {
+    calculateSettlements(document.getElementById('settlement_filter_hike').value);
+  } else if (id === 'main') {
+    refreshFilteredViews();
+  }
+}
+
+// SweetAlert2 toast function, now with 'top-end' position (changed from 'top-start' to match common toast position)
+function showToast(message, icon = 'info') {
+  Swal.fire({
+    toast: true,
+    position: 'top-end', 
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    icon: icon,
+    title: message,
+    didOpen: (toast) => {
+      toast.addEventListener('mouseenter', Swal.stopTimer);
+      toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+  });
+}
+
+// --- Data Management Functions ---
+function addHike(e) {
+  e.preventDefault();
+  const name = document.getElementById('hike_name').value.trim();
+  const location = document.getElementById('hike_location').value.trim();
+  const start = document.getElementById('start_date').value;
+  const end = document.getElementById('end_date').value;
+
+  if (!name || !location || !start || !end) return showToast('Please fill all hike details.', 'warning');
+  if (new Date(start) > new Date(end)) return showToast('Start date cannot be after end date.', 'warning');
+
+  try {
+    db.run(`INSERT INTO hikes (name, location, start_date, end_date) VALUES (?, ?, ?, ?)`, [name, location, start, end]);
+    refreshUI();
+    e.target.reset();
+    showToast(`Hike "${name}" added successfully!`, 'success');
+  } catch (err) {
+    showToast('Error adding hike.', 'danger');
+    console.error(err);
+  }
+}
+
+function addHiker(e) {
+  e.preventDefault();
+  const name = document.getElementById('hiker_name').value.trim();
+  if (!name) return showToast('Please enter a hiker name.', 'warning');
+  try {
+    db.run(`INSERT INTO hikers (name) VALUES (?)`, [name]);
+    refreshUI();
+    e.target.reset();
+    showToast(`Hiker "${name}" added to global list.`, 'success');
+  } catch (err) {
+    showToast('Error adding hiker.', 'danger');
+    console.error(err);
+  }
+}
+
+function assignHikersToHike(e) {
+  e.preventDefault();
+  const hikeId = document.getElementById('assign_hike_id').value;
+  if (!hikeId) return showToast('Please select a hike.', 'warning');
+  
+  const checkboxes = document.querySelectorAll('#assign_hiker_checkboxes input[type="checkbox"][id^="assign_chk_"]'); // Target only individual hiker checkboxes
+  const assignedHikerIds = Array.from(checkboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
+
+  try {
+    db.exec("BEGIN TRANSACTION;");
+    db.run('DELETE FROM hike_participants WHERE hike_id = ?', [hikeId]);
+    const stmt = db.prepare('INSERT INTO hike_participants (hike_id, hiker_id) VALUES (?, ?)');
+    assignedHikerIds.forEach(hikerId => stmt.run([hikeId, hikerId]));
+    stmt.free();
+    db.exec("COMMIT;");
+    showToast('Hike participants updated!', 'success');
+    refreshUI(); // Refresh the entire UI to ensure all components are up-to-date
+    
+
+    e.target.reset();
+    document.getElementById('assign_hike_id').dispatchEvent(new Event('change'));
+
+
+  } catch (err) {
+    db.exec("ROLLBACK;");
+    showToast('Failed to update participants.', 'danger');
+    console.error(err);
+  }
+}
+
+function addPayment(e) {
+  e.preventDefault();
+  const hike_id = parseInt(document.getElementById('payment_hike').value);
+  const desc = document.getElementById('payment_desc').value.trim();
+  const amount = parseFloat(document.getElementById('payment_amount').value);
+  const paid_by = parseInt(document.getElementById('paid_by').value);
+  const involved = Array.from(document.querySelectorAll('input[name="involved_hikers"]:checked')).map(cb => parseInt(cb.value));
+
+  if (!desc || isNaN(amount) || amount <= 0 || isNaN(paid_by) || isNaN(hike_id)) return showToast('Please fill all details correctly.', 'warning');
+  if (involved.length === 0) return showToast('Please select at least one involved hiker.', 'warning');
+  
+  try {
+    db.run(`INSERT INTO payments (description, amount, paid_by, hike_id) VALUES (?, ?, ?, ?)`, [desc, amount, paid_by, hike_id]);
+    const paymentId = db.exec(`SELECT last_insert_rowid()`)[0].values[0][0];
+    const stmt = db.prepare(`INSERT INTO payment_participants (payment_id, hiker_id) VALUES (?, ?)`);
+    involved.forEach(hid => stmt.run([paymentId, hid]));
+    stmt.free();
+    refreshFilteredViews();
+    e.target.reset();
+    updatePaymentFormForHike();
+    showToast(`Payment for "${desc}" added!`, 'success');
+  } catch (err) {
+    showToast('Error adding payment.', 'danger');
+    console.error(err);
+  }
+}
+
+function deletePayment(paymentId) {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      try {
+        db.run(`DELETE FROM payment_participants WHERE payment_id = ?`, [paymentId]);
+        db.run(`DELETE FROM payments WHERE id = ?`, [paymentId]);
+        refreshFilteredViews();
+        showToast('Payment deleted.', 'info');
+      } catch (err) {
+        showToast('Error deleting payment.', 'danger');
+        console.error(err);
+      }
+    }
+  });
+}
+
+// --- UI Refresh and Display Functions ---
+function refreshUI() {
+  const hikes = db.exec(`SELECT * FROM hikes`)[0]?.values || [];
+  const hikers = db.exec(`SELECT id, name FROM hikers`)[0]?.values || [];
+
+  const hikeOptions = hikes.map(h => `<option value="${h[0]}">${h[1]}, ${h[2]}</option>`).join('');
+  const allHikesOption = '<option value="all">All Hikes (Combined)</option>';
+  
+  // Store current selections before re-populating
+  const currentAssignHike = document.getElementById('assign_hike_id').value;
+  const currentPaymentFilter = document.getElementById('payment_filter_hike').value;
+  const currentSettlementFilter = document.getElementById('settlement_filter_hike').value;
+
+  // Populate all hike-related dropdowns
+  document.getElementById('payment_hike').innerHTML = hikeOptions || '<option value="">Create a hike first</option>';
+  document.getElementById('assign_hike_id').innerHTML = hikeOptions ? `<option value="">-- Select a Hike --</option>${hikeOptions}` : '<option value="">Create a hike first</option>';
+  document.getElementById('payment_filter_hike').innerHTML = allHikesOption + hikeOptions;
+  document.getElementById('settlement_filter_hike').innerHTML = allHikesOption + hikeOptions;
+
+  // Restore selections
+  document.getElementById('assign_hike_id').value = currentAssignHike;
+  document.getElementById('payment_filter_hike').value = currentPaymentFilter;
+  document.getElementById('settlement_filter_hike').value = currentSettlementFilter;
+  
+  // Display lists
+  document.getElementById('hike_list').innerHTML = hikes.length > 0 ? hikes.map(h => `<tr><td>${h[1]}, ${h[2]} (${new Date(h[3]).toLocaleDateString()} to ${new Date(h[4]).toLocaleDateString()})</td></tr>`).join('') : '<tr><td class="list-placeholder">No hikes added yet.</td></tr>';
+  
+
+ // Logic for displaying 4 column for hikers
+ let hikerListHtml = '';
+  const numColumns = 4;
+  if (hikers.length > 0) {
+    for (let i = 0; i < hikers.length; i += numColumns) {
+      hikerListHtml += '<tr>';
+      for (let j = 0; j < numColumns; j++) {
+        const hikerIndex = i + j;
+        if (hikerIndex < hikers.length) {
+          hikerListHtml += `<td style="width:25%">${hikers[hikerIndex][1]}</td>`;
+        } else {
+          hikerListHtml += `<td style="width:25%"></td>`; // Empty cell for remaining columns in the last row
+        }
+      }
+      hikerListHtml += '</tr>';
+    }
+  } else {
+    // If no hikers, add one row with "No hikers added yet." in the first cell and empty cells for the rest
+    hikerListHtml = `<tr><td class="list-placeholder">No hikers added yet.</td></tr>`;
+  }
+  document.getElementById('hiker_list').innerHTML = hikerListHtml;
+
+
+  loadHikeParticipants();
+  updatePaymentFormForHike();
+  refreshFilteredViews();
+  calculateSettlements(document.getElementById('settlement_filter_hike').value);
+}
+
+function loadHikeParticipants() {
+  const hikeId = document.getElementById('assign_hike_id').value;
+  const container = document.getElementById('assign_hiker_checkboxes');
+  if (!hikeId) return container.innerHTML = '<p class="text-muted list-placeholder">Select a hike to manage its participants.</p>';
+  
+  const allHikers = db.exec('SELECT id, name FROM hikers')[0]?.values || [];
+  if (allHikers.length === 0) return container.innerHTML = '<p class="text-muted list-placeholder">No hikers in global list. Add hikers first.</p>';
+
+  const assignedHikerIdsResult = db.exec('SELECT hiker_id FROM hike_participants WHERE hike_id = ?', [hikeId])[0]?.values || [];
+  const assignedHikerIds = new Set(assignedHikerIdsResult.map(row => row[0]));
+
+  container.innerHTML = `
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" id="select_all_assign_hikers" onchange="toggleAllAssignHikers(this)">
+      <label class="form-check-label fw-bold" for="select_all_assign_hikers">Select All</label>
+    </div>
+    <hr class="my-2">
+  ` + allHikers.map(hiker => `
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" value="${hiker[0]}" id="assign_chk_${hiker[0]}" ${assignedHikerIds.has(hiker[0]) ? 'checked' : ''} onchange="updateAssignSelectAllState()">
+      <label class="form-check-label" for="assign_chk_${hiker[0]}">${hiker[1]}</label>
+    </div>
+  `).join('');
+
+  // After rendering, update the state of the "Select All" checkbox
+  updateAssignSelectAllState();
+}
+
+function updatePaymentFormForHike() {
+    const hikeId = document.getElementById('payment_hike').value;
+    const paidBySelect = document.getElementById('paid_by');
+    const checkboxesContainer = document.getElementById('hiker_checkboxes');
+
+    if (!hikeId) {
+      paidBySelect.innerHTML = '<option value="">Select hike first</option>';
+      checkboxesContainer.innerHTML = '<p class="text-muted list-placeholder">Select a hike to see its participants.</p>';
+      return;
+    }
+
+    const participants = db.exec(`SELECT h.id, h.name FROM hikers h JOIN hike_participants hp ON h.id = hp.hiker_id WHERE hp.hike_id = ?`, [hikeId])[0]?.values || [];
+
+    if (participants.length > 0) {
+        paidBySelect.innerHTML = participants.map(p => `<option value="${p[0]}">${p[1]}</option>`).join('');
+        checkboxesContainer.innerHTML = `
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" id="select_all_hikers" onchange="toggleAllHikers(this)"><label class="form-check-label fw-bold" for="select_all_hikers">Select All</label></div><hr class="my-2">` 
+          + participants.map(p => `<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="involved_hikers" value="${p[0]}" id="chk${p[0]}" onchange="updateSelectAllState()"><label class="form-check-label" for="chk${p[0]}">${p[1]}</label></div>`).join('');
+        
+        // After rendering, update the state of the "Select All" checkbox
+        updateSelectAllState();
+    } else {
+        paidBySelect.innerHTML = '<option value="">No participants</option>';
+        checkboxesContainer.innerHTML = '<p class="text-muted list-placeholder">No participants assigned. Please manage participants first.</p>';
+    }
+}
+
+function refreshFilteredViews() {
+  const hikeId = document.getElementById('payment_filter_hike').value;
+  refreshPaymentsList(hikeId);
+  calculateSummary(hikeId);
+}
+
+function refreshPaymentsList(hikeId) {
+  let query = `SELECT id, description, amount FROM payments`;
+  if (hikeId && hikeId !== 'all') query += ` WHERE hike_id = ${hikeId}`;
+  query += ` ORDER BY id DESC`;
+  
+  const payments = db.exec(query)[0]?.values || [];
+  const listEl = document.getElementById('payment_list');
+  listEl.innerHTML = payments.length > 0 ? payments.map(p => `<tr><td>${p[1]}</td><td>${p[2].toFixed(2)}</td><td class="text-end"><i class="fas fa-trash-alt delete-btn" onclick="deletePayment(${p[0]})" title="Delete Payment"></i></td></tr>`).join('') : '<tr><td colspan="3" class="list-placeholder">No payments recorded for this view.</td></tr>';
+}
+
+function getBalances(hikeId) {
+    let hikeCond = hikeId && hikeId !== 'all' ? `WHERE hp.hike_id = ${hikeId}` : '';
+    // Select participants for the specified hike (or all if 'all' is selected)
+    const hikersData = db.exec(`SELECT DISTINCT h.id, h.name FROM hikers h JOIN hike_participants hp ON h.id = hp.hiker_id ${hikeCond}`)[0]?.values || [];
+
+    const balances = {};
+    hikersData.forEach(h => balances[h[0]] = { name: h[1], paid: 0, owed: 0 });
+
+    let paymentCond = hikeId && hikeId !== 'all' ? `WHERE hike_id = ${hikeId}` : '';
+    const payments = db.exec(`SELECT id, amount, paid_by FROM payments ${paymentCond}`)[0]?.values || [];
+    
+    for (const [pid, amount, paid_by] of payments) {
+        if (balances[paid_by]) balances[paid_by].paid += amount;
+        const participants = db.exec(`SELECT hiker_id FROM payment_participants WHERE payment_id = ${pid}`)[0]?.values || [];
+        if (participants.length > 0) {
+            const split = amount / participants.length;
+            participants.forEach(p_row => {
+                if (balances[p_row[0]]) balances[p_row[0]].owed += split;
+            });
+        }
+    }
+    return balances;
+}
+
+function calculateSummary(hikeId) {
+  const balances = getBalances(hikeId);
+  const summaryBody = document.getElementById('summary');
+  const output = Object.values(balances).map(b => {
+    const balance = b.paid - b.owed;
+    const balanceClass = balance > 0.01 ? 'balance-positive' : balance < -0.01 ? 'balance-negative' : 'balance-zero';
+    return `<tr><td>${b.name}</td><td>${b.paid.toFixed(2)}</td><td>${b.owed.toFixed(2)}</td><td class="${balanceClass}">${balance.toFixed(2)}</td></tr>`;
+  }).join('');
+  summaryBody.innerHTML = output || '<tr><td colspan="4" class="list-placeholder">No data for this view.</td></tr>';
+}
+
+function calculateSettlements(hikeId) {
+  const balances = getBalances(hikeId);
+  const entries = Object.entries(balances).map(([id, b]) => ({ id: parseInt(id), name: b.name, balance: b.paid - b.owed }));
+  let debtors = entries.filter(e => e.balance < 0).sort((a, b) => a.balance - b.balance);
+  let creditors = entries.filter(e => e.balance > 0).sort((a, b) => b.balance - a.balance);
+  const settlements = [];
+  
+  while (debtors.length > 0 && creditors.length > 0) {
+    let debtor = debtors[0];
+    let creditor = creditors[0];
+    const amount = Math.min(-debtor.balance, creditor.balance);
+    if (amount > 0.01) { // Only add if amount is significant
+      settlements.push(`<tr><td>${debtor.name}</td><td>${creditor.name}</td><td>${amount.toFixed(2)}</td></tr>`);
+    }
+    debtor.balance += amount;
+    creditor.balance -= amount;
+    // Remove if balance is near zero (to account for floating point inaccuracies)
+    if (Math.abs(debtor.balance) < 0.01) debtors.shift();
+    if (Math.abs(creditor.balance) < 0.01) creditors.shift();
+  }
+  document.getElementById('settlement_output').innerHTML = settlements.join('') || '<tr><td colspan="3" class="list-placeholder">All settled up!</td></tr>';
+}
+
+// Function for 'Add Payment' section's "Select All"
+function toggleAllHikers(source) {
+  document.querySelectorAll('input[name="involved_hikers"]').forEach(cb => cb.checked = source.checked);
+}
+
+// Function for 'Add Payment' section's individual hiker checkboxes
+function updateSelectAllState() {
+  const allCheckboxes = document.querySelectorAll('input[name="involved_hikers"]');
+  // Check if there are any checkboxes to avoid issues if no participants
+  const allChecked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+  document.getElementById('select_all_hikers').checked = allChecked;
+}
+
+// New function for 'Manage Hike Participants' section's "Select All"
+function toggleAllAssignHikers(source) {
+  // Target only checkboxes whose ID starts with "assign_chk_"
+  document.querySelectorAll('[id^="assign_chk_"]').forEach(cb => cb.checked = source.checked);
+}
+
+// New function for 'Manage Hike Participants' section's individual hiker checkboxes
+function updateAssignSelectAllState() {
+  // Target only checkboxes whose ID starts with "assign_chk_"
+  const allAssignCheckboxes = document.querySelectorAll('[id^="assign_chk_"]');
+  const selectAllAssignCheckbox = document.getElementById('select_all_assign_hikers');
+
+  if (selectAllAssignCheckbox) { // Ensure the "Select All" checkbox exists before trying to update it
+    const allChecked = allAssignCheckboxes.length > 0 && Array.from(allAssignCheckboxes).every(cb => cb.checked);
+    selectAllAssignCheckbox.checked = allChecked;
+  }
+}
+
+</script>
+</body>
+</html>
